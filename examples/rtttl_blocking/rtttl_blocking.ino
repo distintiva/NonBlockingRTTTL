@@ -11,6 +11,8 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println();
+
+  rtttl::callbacks( tone, noTone );
 }
 
 void loop() {

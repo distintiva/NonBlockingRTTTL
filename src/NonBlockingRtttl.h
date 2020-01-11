@@ -1,3 +1,9 @@
+/* *******************************************
+Fork from original: http://github.com/end2endzone/NonBlockingRTTTL
+Forked by: Distintiva Solutions ( https://github.com/distintiva/ )
+Changes:  Added a ::callbacks() function to allow using with other architectures that doesn't support tone/noTone
+
+***********************************************/
 // ---------------------------------------------------------------------------
 // AUTHOR/LICENSE:
 //  The following code was written by Antoine Beauchamp. For other authors, see AUTHORS file.
@@ -9,7 +15,7 @@
 #ifndef NonBlockingRtttl_h
 #define NonBlockingRtttl_h
 
-#define NONBLOCKINGRTTTL_VERSION 1.1.2
+#define NONBLOCKINGRTTTL_VERSION 1.2.2
 
 #include "Arduino.h"
 
@@ -115,6 +121,15 @@
 
 namespace rtttl
 {
+
+
+/****************************************************************************
+ * New by Distintiva Solutions:
+ *   callbacks() add callback to the current platform tone and noTone functions
+ * Usage: rtttl::callbacks( tone, noTone );
+  ****************************************************************************/
+void callbacks( void (*tone_callbak)(uint8_t pin, int frq, uint32_t duration), void (*noTone_callback)(uint8_t pin) );
+
 
 /****************************************************************************
  * Description:

@@ -11,6 +11,10 @@
  * RTTTL Library data
  *********************************************************/
 
+/*void tone(int pin, int frq, int duration) __attribute__((weak));
+void tone(int frq) __attribute__((weak));
+void noTone(int pin) __attribute__((weak));
+*/
 namespace rtttl
 {
 
@@ -34,8 +38,43 @@ byte pin = -1;
 unsigned long noteDelay = 0; //m will always be after which means the last note is done playing
 bool playing = false;
 
+//*DS*---
+void (*tone_func)(uint8_t pin, int frq, uint32_t duration);
+void (*noTone_func)(uint8_t pin);
+
+
 //pre-declaration
 void nextnote();
+
+// tone() and noTone() are not implemented for Arduino core for the ESP32
+// See https://github.com/espressif/arduino-esp32/issues/980
+// and https://github.com/espressif/arduino-esp32/issues/1720
+#if defined(ESP32)
+void noTone(){
+  ledcWrite(0, 0); // channel, volume
+}
+
+void noTone(int pin){
+  noTone();
+}
+
+void tone(int frq) {
+  ledcWriteTone(0, frq); // channel, freq
+  ledcWrite(0, 255); // channel, volume
+}
+
+void tone(int pin, int frq, int duration){
+  tone(frq);
+}
+#endif
+
+
+void callbacks(void (*tone_callbak)(uint8_t , int , uint32_t ), void (*noTone_callback)(uint8_t)){
+    tone_func = tone_callbak;
+    noTone_func = noTone_callback;
+
+}
+
 
 void begin(byte iPin, const char * iSongBuffer)
 {
@@ -46,6 +85,10 @@ void begin(byte iPin, const char * iSongBuffer)
     
   //init values
   pin = iPin;
+  #if defined(ESP32)
+  ledcSetup(0, 1000, 10); // resolution always seems to be 10bit, no matter what is given
+  ledcAttachPin(pin, 0);
+  #endif
   buffer = iSongBuffer;
   bufferIndex = 0;
   default_dur = 4;
@@ -59,7 +102,7 @@ void begin(byte iPin, const char * iSongBuffer)
   #endif
   
   //stop current note
-  noTone(pin);
+  noTone_func(pin);
 
   //read buffer until first note
   int num;
@@ -132,7 +175,7 @@ void nextnote()
   byte scale;
 
   //stop current note
-  noTone(pin);
+  noTone_func(pin);
 
   // first, get note duration, if available
   int num = 0;
@@ -219,7 +262,7 @@ void nextnote()
     Serial.println(duration, 10);
     #endif
     
-    tone(pin, notes[(scale - 4) * 12 + note], duration);
+    tone_func(pin, notes[(scale - 4) * 12 + note], duration);
     
     noteDelay = millis() + (duration+1);
   }
@@ -297,7 +340,7 @@ void stop()
 
     //issue #6: Bug for ESP8266 environment - noTone() not called at end of sound.
     //disable sound if one abort playback using the stop() command.
-    noTone(pin);
+    noTone_func(pin);
 
     playing = false;
   }

@@ -1,9 +1,47 @@
-![NonBlockingRTTTL logo](docs/NonBlockingRtttl-splashscreen.png?raw=true)
-
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Github Releases](https://img.shields.io/github/release/end2endzone/NonBlockingRTTTL.svg)](https://github.com/end2endzone/NonBlockingRTTTL/releases)
 
+
+# What's New in this Fork from original NonBlockingRTTTL #
+
+Forked from: [https://github.com/end2endzone/NonBlockingRTTTL](https://github.com/end2endzone/NonBlockingRTTTL)
+Forked by: Distintiva Solutions [https://github.com/distintiva/](https://github.com/distintiva/)
+
+We have added a ::callbacks() function to allow using with other architectures that doesn't support tone/noTone
+
+You must define tone and noTone callback functions for the current platform
+
+```cpp
+rtttl::callbacks( tone, noTone );
+```
+
+if your platform doesn't have tone and noTone function you can define them,  for example for  ESP32
+
+
+```cpp
+
+//- ESP32
+
+void noTone(){
+  ledcWrite(0, 0); // channel, volume
+}
+
+void noTone(int pin){
+  noTone();
+}
+
+void tone(int frq) {
+  ledcWriteTone(0, frq); // channel, freq
+  ledcWrite(0, 255); // channel, volume
+}
+
+void tone(int pin, int frq, int duration){
+  tone(frq);
+}
+
+//- THEN 
+rtttl::callbacks( tone, noTone );
+```
 
 
 # NonBlockingRTTTL #
@@ -104,6 +142,8 @@ void setup() {
  
   Serial.begin(115200);
   Serial.println();
+
+  rtttl::callbacks( tone, noTone ); //- new in Distintiva Solutions fork
 }
  
 void loop() {
