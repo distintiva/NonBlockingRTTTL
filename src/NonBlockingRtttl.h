@@ -129,7 +129,8 @@ namespace rtttl
  * Usage: rtttl::callbacks( tone, noTone );
   ****************************************************************************/
 void callbacks( void (*tone_callbak)(uint8_t pin, int frq, uint32_t duration), void (*noTone_callback)(uint8_t pin) );
-
+//- Returns de current playing frequecny (if mapped then  Frequency is mapped to 0-255  from ( min and max frequencies detected)
+int frequency(uint8_t mapped);
 
 /****************************************************************************
  * Description:
@@ -155,6 +156,11 @@ void play();
  *   stop() stops playing the current song.
  ****************************************************************************/
 void stop();
+
+
+
+
+
 
 /****************************************************************************
  * Description:

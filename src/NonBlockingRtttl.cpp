@@ -7,6 +7,8 @@
 #include "Arduino.h"
 #include "NonBlockingRtttl.h"
 
+
+
 /*********************************************************
  * RTTTL Library data
  *********************************************************/
@@ -38,6 +40,10 @@ byte pin = -1;
 unsigned long noteDelay = 0; //m will always be after which means the last note is done playing
 bool playing = false;
 
+int currentFrq = 0;
+int minFrq = 0;
+int maxFrq = 0;
+
 //*DS*---
 void (*tone_func)(uint8_t pin, int frq, uint32_t duration);
 void (*noTone_func)(uint8_t pin);
@@ -45,6 +51,7 @@ void (*noTone_func)(uint8_t pin);
 
 //pre-declaration
 void nextnote();
+void minmaxfreq();
 
 // tone() and noTone() are not implemented for Arduino core for the ESP32
 // See https://github.com/espressif/arduino-esp32/issues/980
@@ -75,6 +82,10 @@ void callbacks(void (*tone_callbak)(uint8_t , int , uint32_t ), void (*noTone_ca
 
 }
 
+int frequency(uint8_t mapped){
+	if(mapped) return map( currentFrq, minFrq, maxFrq, 0,255 );
+	return currentFrq;
+}
 
 void begin(byte iPin, const char * iSongBuffer)
 {
@@ -82,7 +93,8 @@ void begin(byte iPin, const char * iSongBuffer)
   Serial.print("playing: ");
   Serial.println(iSongBuffer);
   #endif
-    
+  
+
   //init values
   pin = iPin;
   #if defined(ESP32)
@@ -96,11 +108,19 @@ void begin(byte iPin, const char * iSongBuffer)
   bpm=63;
   playing = true;
   noteDelay = 0;
+
+  minFrq = 0;
+  maxFrq = 0;
+
+
   #ifdef RTTTL_NONBLOCKING_DEBUG
   Serial.print("noteDelay=");
   Serial.println(noteDelay);
   #endif
   
+
+  
+
   //stop current note
   noTone_func(pin);
 
@@ -166,6 +186,19 @@ void begin(byte iPin, const char * iSongBuffer)
   #ifdef RTTTL_NONBLOCKING_INFO
   Serial.print("wn: "); Serial.println(wholenote, 10);
   #endif
+
+
+  //- Calc min and max freqs
+  const char * bufidx = buffer;
+  while(*buffer != '\0')
+  {
+    minmaxfreq();
+  }
+  buffer = bufidx;
+
+ // Serial.println("MIN:"); Serial.print(minFrq);
+ // Serial.println("MAX:"); Serial.print(maxFrq);
+
 }
 
 void nextnote()
@@ -253,16 +286,18 @@ void nextnote()
 
   if(note)
   {
+	currentFrq = notes[(scale - 4) * 12 + note];
+
     #ifdef RTTTL_NONBLOCKING_INFO
     Serial.print("Playing: ");
     Serial.print(scale, 10); Serial.print(' ');
     Serial.print(note, 10); Serial.print(" (");
-    Serial.print(notes[(scale - 4) * 12 + note], 10);
+    Serial.print(currentFrq , 10);
     Serial.print(") ");
     Serial.println(duration, 10);
     #endif
     
-    tone_func(pin, notes[(scale - 4) * 12 + note], duration);
+    tone_func(pin, currentFrq, duration);
     
     noteDelay = millis() + (duration+1);
   }
@@ -275,6 +310,100 @@ void nextnote()
     
     noteDelay = millis() + (duration);
   }
+}
+
+
+void minmaxfreq()
+{
+  long duration;
+  byte note;
+  byte scale;
+
+  
+  // first, get note duration, if available
+  int num = 0;
+  while(isdigit(*buffer))
+  {
+    num = (num * 10) + (*buffer++ - '0');
+  }
+  
+  if(num) duration = wholenote / num;
+  else duration = wholenote / default_dur;  // we will need to check if we are a dotted note after
+
+  // now get the note
+  note = 0;
+
+  switch(*buffer)
+  {
+    case 'c':
+      note = 1;
+      break;
+    case 'd':
+      note = 3;
+      break;
+    case 'e':
+      note = 5;
+      break;
+    case 'f':
+      note = 6;
+      break;
+    case 'g':
+      note = 8;
+      break;
+    case 'a':
+      note = 10;
+      break;
+    case 'b':
+      note = 12;
+      break;
+    case 'p':
+    default:
+      note = 0;
+  }
+  buffer++;
+
+  // now, get optional '#' sharp
+  if(*buffer == '#')
+  {
+    note++;
+    buffer++;
+  }
+
+  // now, get optional '.' dotted note
+  if(*buffer == '.')
+  {
+    duration += duration/2;
+    buffer++;
+  }
+
+  // now, get scale
+  if(isdigit(*buffer))
+  {
+    scale = *buffer - '0';
+    buffer++;
+  }
+  else
+  {
+    scale = default_oct;
+  }
+
+  scale += OCTAVE_OFFSET;
+
+  if(*buffer == ',')
+    buffer++;       // skip comma for next note (or we may be at the end)
+
+  // now play the note
+
+  if(note)
+  {
+	currentFrq = notes[(scale - 4) * 12 + note];
+
+	if(minFrq==0) minFrq = currentFrq;
+
+	 if(currentFrq> maxFrq) maxFrq = currentFrq;
+	 if(currentFrq< minFrq) minFrq = currentFrq;
+  }
+  
 }
 
 void play()
@@ -313,6 +442,8 @@ void play()
     //issue #6: Bug for ESP8266 environment - noTone() not called at end of sound.
     //disable sound at the end of a normal playback.
     stop();
+
+    currentFrq = 0;
 
     return; //end of the song
   }
