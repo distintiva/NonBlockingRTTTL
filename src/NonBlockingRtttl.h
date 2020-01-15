@@ -126,9 +126,10 @@ namespace rtttl
 /****************************************************************************
  * New by Distintiva Solutions:
  *   callbacks() add callback to the current platform tone and noTone functions
- * Usage: rtttl::callbacks( tone, noTone );
+ * Usage: rtttl::callbacks( tone, noTone, 1 );
+ * using_timer = 0   if tone functions DOESN'T uses Arduino TIMERs
   ****************************************************************************/
-void callbacks( void (*tone_callbak)(uint8_t pin, int frq, uint32_t duration), void (*noTone_callback)(uint8_t pin) );
+void callbacks( void (*tone_callbak)(uint8_t pin, int frq, uint32_t duration), void (*noTone_callback)(uint8_t pin), uint8_t use_timer = 1 );
 //- Returns de current playing frequecny (if mapped then  Frequency is mapped to 0-255  from ( min and max frequencies detected)
 int frequency(uint8_t mapped);
 

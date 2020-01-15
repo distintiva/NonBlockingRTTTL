@@ -47,7 +47,7 @@ int maxFrq = 0;
 //*DS*---
 void (*tone_func)(uint8_t pin, int frq, uint32_t duration);
 void (*noTone_func)(uint8_t pin);
-
+uint8_t using_timer = 1;  //- 1 if tone functions uses Arduino TIMERs
 
 //pre-declaration
 void nextnote();
@@ -76,9 +76,10 @@ void tone(int pin, int frq, int duration){
 #endif
 
 
-void callbacks(void (*tone_callbak)(uint8_t , int , uint32_t ), void (*noTone_callback)(uint8_t)){
+void callbacks(void (*tone_callbak)(uint8_t , int , uint32_t ), void (*noTone_callback)(uint8_t), uint8_t use_timer){
     tone_func = tone_callbak;
     noTone_func = noTone_callback;
+    using_timer = use_timer;
 
 }
 
@@ -282,6 +283,9 @@ void nextnote()
   if(*buffer == ',')
     buffer++;       // skip comma for next note (or we may be at the end)
 
+  if(*buffer == ' ')
+    buffer++;       // skip comma for next note (or we may be at the end)
+
   // now play the note
 
   if(note)
@@ -299,7 +303,7 @@ void nextnote()
     
     tone_func(pin, currentFrq, duration);
     
-    noteDelay = millis() + (duration+1);
+    noteDelay = millis() + (  (using_timer==1?duration:0)  +1);
   }
   else
   {

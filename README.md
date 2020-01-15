@@ -7,12 +7,19 @@
 Forked from: [https://github.com/end2endzone/NonBlockingRTTTL](https://github.com/end2endzone/NonBlockingRTTTL) 
 Forked by: Distintiva Solutions [https://github.com/distintiva/](https://github.com/distintiva/)
 
-We have added a ::callbacks() function to allow using with other architectures that doesn't support tone/noTone
+- Added  ::callbacks() function to allow using custom tones functions with other architectures that doesn't support tone/noTone
+- Added  ::frequency()  that returns the frecuency that is currently playing ( for example to program dancing lights or dancing robots)
 
-You must define tone and noTone callback functions for the current platform
+You must define tone and noTone callback functions for the current 
 
 ```cpp
 rtttl::callbacks( tone, noTone );
+```
+
+If tone callbacks doens't use arduino TIMERs,  then you must tell it RTTTL 
+
+```cpp
+rtttl::callbacks( TimerFreeTone, TimerFreeNoTone ,0 );
 ```
 
 if your platform doesn't have tone and noTone function you can define them,  for example for  ESP32
